@@ -31,7 +31,7 @@ class action_plugin_bpmnio extends DokuWiki_Action_Plugin {
         $event->data['link'][] = $this->create_css("assets/bpmn-font/css/bpmn-embedded.css");
 
         // Load bpmn.io
-        $event->data['script'][] = $this->create_js("bpmn-viewer.min.js");
+        $event->data['script'][] = $this->create_js("bpmn-viewer.js");
         
         // If activated we can edit but we cannot save
         // $event->data['script'][] = $this->create_js("bpmn-modeler.min.js");
