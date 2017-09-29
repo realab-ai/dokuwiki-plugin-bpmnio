@@ -20,6 +20,8 @@ class action_plugin_bpmnio extends DokuWiki_Action_Plugin {
         $controller->register_hook('TPL_METAHEADER_OUTPUT', 'BEFORE', $this, 'handle_tpl_metaheader_output');
         $controller->register_hook('TOOLBAR_DEFINE', 'AFTER', $this, 'handle_toolbar', array ());
         $controller->register_hook('HTML_SECEDIT_BUTTON', 'BEFORE', $this, 'handle_section_edit_button');
+        $controller->register_hook('HTML_EDIT_FORMSELECTION', 'BEFORE', $this, 'handle_section_edit_chart');
+        $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'handle_section_edit_post');
     }
 
     /**
@@ -31,10 +33,8 @@ class action_plugin_bpmnio extends DokuWiki_Action_Plugin {
         $event->data['link'][] = $this->create_css("assets/bpmn-font/css/bpmn-embedded.css");
 
         // Load bpmn.io
-        $event->data['script'][] = $this->create_js("bpmn-viewer.js");
-        
-        // If activated we can edit but we cannot save
-        // $event->data['script'][] = $this->create_js("bpmn-modeler.min.js");
+        $event->data['script'][] = $this->create_js("bpmn-viewer.min.js");
+        $event->data['script'][] = $this->create_js("bpmn-modeler.min.js");
         $event->data['script'][] = $this->create_js("script.js");
     }
     
@@ -80,9 +80,48 @@ class action_plugin_bpmnio extends DokuWiki_Action_Plugin {
         if($event->data['target'] !== 'plugin_bpmnio') {
             return;
         }
-        $event->data['name'] = $this->getLang('section_name');
+        $event->data['name'] = $this->getLang('secedit_name');
     }
 
+    public function handle_section_edit_chart(Doku_Event $event, $param) {
+        global $TEXT;
+        if ($event->data['target'] !== 'plugin_bpmnio') {
+            // Not a data edit
+            return;
+        }
+
+        $event->stopPropagation();
+        $event->preventDefault();
+        unset($event->data['intro_locale']);
+        $event->data['media_manager'] = false;
+
+        echo $this->locale_xhtml('edit_intro' . ($this->getConf('edit_content_only') ? '_contentonly' : ''));
+
+        require_once 'renderer_bpmnio_edit.php';
+        $Renderer = new Doku_Renderer_plugin_bpmnio_edit();
+        $Renderer->form = $event->data['form'];
+
+        // Loop through the instructions
+        $instructions = p_get_instructions($TEXT);
+        foreach ( $instructions as $instruction ) {
+            // Execute the callback against the Renderer
+            call_user_func_array(array($Renderer, $instruction[0]),$instruction[1]);
+        }
+    }
+    
+    /**
+     * @param Doku_Event $event
+     */
+    function handle_section_edit_post(Doku_Event $event) {
+        if (!isset($_POST[$this->getLang('secedit_name')])) {
+            return;
+        }
+        global $TEXT;
+
+        require_once 'syntax.php';
+        $TEXT = syntax_plugin_bpmnio::editToWiki($_POST[$this->getLang('secedit_name')]);
+    }
+    
     private function _get_open_text() {
         return '<?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="sid-38422fae-e03e-43a3-bef4-bd33b32041b2" targetNamespace="http://bpmn.io/bpmn" exporter="http://bpmn.io" exporterVersion="0.10.1">

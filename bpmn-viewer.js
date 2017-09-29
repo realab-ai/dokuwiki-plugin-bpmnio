@@ -10,7 +10,9 @@
  *
  * Date: 2017-09-01
  */
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.BpmnJS = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+
+// change the module name from BpmnJS to BpmnJSViewer @liheng
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.BpmnJSViewer = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 /**
  * The code in the <project-logo></project-logo> area
  * must not be changed.
@@ -937,23 +939,35 @@ function BpmnRenderer(eventBus, styles, pathMap, canvas, priority) {
 
   function renderLabel(parentGfx, label, options) {
     // add the <a> while link exist. @liheng  
-    var myRe = /\[\[(.*)\|(.*)\]\]/;
+    var myRe = /\[\[([^\|]*)\|?(.*)\]\]/;
     var myArray = myRe.exec(label);
 
     if (myArray !== null) {
         label = myArray[2];
+        if (label === '') {
+            label = myArray[1];
+        }
         var text = textUtil.createText(label || '', options);
         svgClasses(text).add('djs-label');
         svgAppend(parentGfx, text);
         
-        var slink = '?id=' + myArray[1];
+        var slink = myArray[1];
         var stitle = myArray[1];
-        stitle = stitle.replace(/^\s*|\s*$/g, '');
+        
+        //https(://),ftp(://),http(://)
+        myRe = /\:\/\//;
+        myArray = myRe.exec(slink);
+        if(myArray === null) {
+            slink = '?id=' + slink;
+        }
+        
+        //delete the blanks in front and end
+        stitle = stitle.replace(/^\s*|\s*$/g, ''); 
         if (stitle.charAt(stitle.length - 1) === ':') {
             stitle += 'start';
         }
         var helperHref = svgCreate('a');
-        svgAttr(helperHref, {'xlink:href': slink, target: "_blank", title: stitle});
+        svgAttr(helperHref, {'xlink:href': slink, title: stitle});
         var oelement = parentGfx;
         while(oelement.parentNode !== null) {
             if (oelement.parentNode.querySelector('g.djs-element')) {
@@ -978,28 +992,52 @@ function BpmnRenderer(eventBus, styles, pathMap, canvas, priority) {
     var semantic = getSemantic(element);
 
     // change the link text color to green @liheng
-    var myRe = /\[\[(.*)\|(.*)\]\]/;
-    var myArray = myRe.exec(semantic.name);
+    var sLabel = semantic.name;
+    var myRe = /\[\[([^\|]*)\|?(.*)\]\]/;
+    var myArray = myRe.exec(sLabel);
+    var oStyle = new Object();
+    oStyle.box = element;
+    oStyle.align = align;
+    oStyle.padding = 5;
+    oStyle.style = new Object();
     
     if (myArray === null) {
-      return renderLabel(parentGfx, semantic.name, {
-        box: element,
-        align: align,
-        padding: 5,
-        style: {
-          fill: getStrokeColor(element)
-        }
-      });
+        oStyle.style.fill = getStrokeColor(element);
     } else {
-      return renderLabel(parentGfx, semantic.name, {
-        box: element,
-        align: align,
-        padding: 5,
-        style: {
-          fill: 'green'
-        }
-      });
+        oStyle.style.fill = 'green';
     }
+    
+    myRe = /\*\*(.*)\*\*/;
+    myArray = myRe.exec(sLabel);
+    if(myArray !== null) {
+        sLabel = sLabel.replace(myRe, '$1');
+        oStyle.style.fontWeight = 'bold';
+    }
+    myRe = /\/\/(.*)\/\//;
+    myArray = myRe.exec(sLabel);
+    if(myArray !== null) {
+        sLabel = sLabel.replace(myRe, '$1');
+        oStyle.style.fontStyle = 'italic';
+    }
+    myRe = /\_\_(.*)\_\_/;
+    myArray = myRe.exec(sLabel);
+    if(myArray !== null) {
+        sLabel = sLabel.replace(myRe, '$1');
+        oStyle.style.textDecoration = 'underline';
+    }
+    myRe = /\<del\>(.*)\<\/del\>/;
+    myArray = myRe.exec(sLabel);
+    if(myArray !== null) {
+        sLabel = sLabel.replace(myRe, '$1');
+        oStyle.style.textDecoration = 'line-through';
+    }
+    myRe = /\'\'(.*)\'\'/;
+    myArray = myRe.exec(sLabel);
+    if(myArray !== null) {
+        sLabel = sLabel.replace(myRe, '$1');
+        oStyle.style.fontFamily = 'Monospace';
+    }
+    return renderLabel(parentGfx, sLabel, oStyle);
 }
 
   function renderExternalLabel(parentGfx, element) {
@@ -1012,29 +1050,54 @@ function BpmnRenderer(eventBus, styles, pathMap, canvas, priority) {
     };
     
     // change the link text color to green @liheng
-    var myRe = /\[\[(.*)\|(.*)\]\]/;
-    var myArray = myRe.exec(semantic.name);
+    var sLabel = semantic.name;
+    var myRe = /\[\[([^\|]*)\|?(.*)\]\]/;
+    var myArray = myRe.exec(sLabel);
+    var oStyle = new Object();
+    oStyle.box = box;
+    oStyle.fitBox = true;
+    oStyle.style = new Object();
+    oStyle.style.fontSize = '11px';
+    oStyle.style.textAlign = 'center';
     
     if (myArray === null) {
-      return renderLabel(parentGfx, semantic.name, {
-        box: box,
-        fitBox: true,
-        style: { 
-            fontSize: '11px',
-            fill: getStrokeColor(element)
-        }
-      });
+        oStyle.style.fill = getStrokeColor(element);
     } else {
-      return renderLabel(parentGfx, semantic.name, {
-        box: box,
-        fitBox: true,
-        style: { 
-            fontSize: '11px',
-            fill: 'green'
-        }
-      });
+        oStyle.style.fill = 'green';
     }
-  }
+    
+    myRe = /\*\*(.*)\*\*/;
+    myArray = myRe.exec(sLabel);
+    if(myArray !== null) {
+        sLabel = sLabel.replace(myRe, '$1');
+        oStyle.style.fontWeight = 'bold';
+    }
+    myRe = /\/\/(.*)\/\//;
+    myArray = myRe.exec(sLabel);
+    if(myArray !== null) {
+        sLabel = sLabel.replace(myRe, '$1');
+        oStyle.style.fontStyle = 'italic';
+    }
+    myRe = /\_\_(.*)\_\_/;
+    myArray = myRe.exec(sLabel);
+    if(myArray !== null) {
+        sLabel = sLabel.replace(myRe, '$1');
+        oStyle.style.textDecoration = 'underline';
+    }
+    myRe = /\<del\>(.*)\<\/del\>/;
+    myArray = myRe.exec(sLabel);
+    if(myArray !== null) {
+        sLabel = sLabel.replace(myRe, '$1');
+        oStyle.style.textDecoration = 'line-through';
+    }
+    myRe = /\'\'(.*)\'\'/;
+    myArray = myRe.exec(sLabel);
+    if(myArray !== null) {
+        sLabel = sLabel.replace(myRe, '$1');
+        oStyle.style.fontFamily = 'Monospace';
+    }
+    return renderLabel(parentGfx, sLabel, oStyle);
+ }
 
   function renderLaneLabel(parentGfx, text, element) {
     var textBox = renderLabel(parentGfx, text, {
@@ -10711,13 +10774,13 @@ function InteractionEvents(eventBus, elementRegistry, styles) {
   }
 
   var bindings = {
-    //disable 3 no-use mouse events @liheng
+    //disable mouse events @liheng
     //mouseover: 'element.hover',
     //mouseout: 'element.out',
     //click: 'element.click',
-    dblclick: 'element.dblclick',
-    mousedown: 'element.mousedown',
-    mouseup: 'element.mouseup'
+    //dblclick: 'element.dblclick',
+    //mousedown: 'element.mousedown',
+    //mouseup: 'element.mouseup'
   };
 
 
