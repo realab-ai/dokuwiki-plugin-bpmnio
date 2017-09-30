@@ -180,10 +180,10 @@ function regevents() {
 
 jQuery(document).ready(function() {
     //jQuery("textarea[id^=__bpmnio_]").each(function(i, tag) { try {
-    jQuery("bpmnio textarea[id^=__bpmnio_][class=bpmnio_data]").each(function(i, tag) {
+    jQuery("bpmnio textarea[class=bpmnio_data]").each(function(i, tag) {
         chartview(tag);
     });
-    jQuery("bpmnio textarea[id^=__bpmnio_][class=bpmnio_chart]:first").each(function(i, tag) {
+    jQuery("bpmnio textarea[class=bpmnio_chart]:first").each(function(i, tag) {
         chartmodel(tag);
         createtoolbar();
         regevents();
