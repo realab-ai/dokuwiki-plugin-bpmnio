@@ -2,10 +2,7 @@ function chartview(tag) {
      try {
         var xml = jQuery(tag).text();
         xml = decodeURIComponent(escape(window.atob(xml)));
-  	var id = jQuery(tag).attr('id');
-	// avoid doing it twice
-	jQuery(tag).removeAttr('id');
-
+  	
 	// bundle exposes the viewer / modeler via the BpmnJS variable
   	var BpmnViewer = window.BpmnJSViewer;
   	var containerdiv = document.createElement('div');
@@ -39,10 +36,7 @@ function chartmodel(tag) {
      try {
         var xml = jQuery(tag).text();
         xml = decodeURIComponent(escape(window.atob(xml)));
-  	var id = jQuery(tag).attr('id');
-	// avoid doing it twice
-	jQuery(tag).removeAttr('id');
-
+  	
 	// bundle exposes the viewer / modeler via the BpmnJS variable
   	var BpmnModeler = window.BpmnJS;
   	var containerdiv = document.createElement('div');
